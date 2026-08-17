@@ -16,6 +16,16 @@ import { evaluateSLAStatus } from '@chatwoot/utils';
 import { resetSentMessage } from '@/store/conversation/sendMessageSlice';
 import { selectAllDashboardApps } from '@/store/dashboard-app/dashboardAppSlice';
 import { selectUser } from '@/store/auth/authSelectors';
+import { selectInboxById } from '@/store/inbox/inboxSelectors';
+import {
+  selectActiveCall,
+  selectIsInitiatingCall,
+  setCall,
+  setInitiating,
+} from '@/store/call/callSlice';
+import { VOICE_CALL_OUTBOUND_INIT_STATUS } from '@/store/call/callTypes';
+import { initiateOutboundCall } from '@/utils/whatsappCallSession';
+import { isWhatsappVoiceEnabled } from '@/utils/inboxUtils';
 
 type ChatScreenHeaderProps = {
   name: string;
@@ -32,6 +42,13 @@ export const ChatHeaderContainer = (props: ChatScreenHeaderProps) => {
   const conversation = useAppSelector(state => selectConversationById(state, conversationId));
   const currentUser = useAppSelector(selectUser);
   const dashboardApps = useAppSelector(selectAllDashboardApps);
+  const inboxId = conversation?.inboxId;
+  const inbox = useAppSelector(state => (inboxId ? selectInboxById(state, inboxId) : undefined));
+  const activeCall = useAppSelector(selectActiveCall);
+  const isInitiatingCall = useAppSelector(selectIsInitiatingCall);
+
+  const canCallOverWhatsapp = isWhatsappVoiceEnabled(inbox);
+  const contactPhoneNumber = conversation?.meta?.sender?.phoneNumber;
 
   const appliedSla = conversation?.appliedSla;
 
@@ -162,6 +179,53 @@ export const ChatHeaderContainer = (props: ChatScreenHeaderProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagerViewIndex, canOpenBitrixCard, bitrixCardUrl]);
 
+  const handleWhatsappCall = async () => {
+    if (isInitiatingCall || activeCall) return;
+    dispatch(setInitiating(true));
+    try {
+      const response = await initiateOutboundCall(conversationId);
+
+      // LOCKED = já tem init em voo ou chamada ativa. No-op silencioso.
+      if (response?.status === VOICE_CALL_OUTBOUND_INIT_STATUS.LOCKED) return;
+
+      // Sem call id: o contato ainda não deu permissão e a Meta recebeu o template
+      // de permissão em vez da chamada.
+      if (!response?.id) {
+        showToast({
+          message: i18n.t(
+            response?.status === VOICE_CALL_OUTBOUND_INIT_STATUS.PERMISSION_PENDING
+              ? 'CONVERSATION.CALL.PERMISSION_PENDING'
+              : 'CONVERSATION.CALL.PERMISSION_REQUESTED',
+          ),
+        });
+        return;
+      }
+
+      // Fica em 'ringing' até o `voice_call.outbound_accepted`: virar 'active' aqui
+      // começaria o cronômetro antes de o contato atender.
+      dispatch(
+        setCall({
+          callId: response.id,
+          callSid: response.call_id,
+          conversationId,
+          contactName: name,
+          status: 'ringing',
+          isMuted: false,
+          isSpeakerOn: false,
+        }),
+      );
+      navigation.dispatch(StackActions.push('CallScreen'));
+    } catch {
+      showToast({ message: i18n.t('CONVERSATION.CALL.FAILED') });
+    } finally {
+      dispatch(setInitiating(false));
+    }
+  };
+
+  const handlePhoneCall = () => {
+    if (contactPhoneNumber) Linking.openURL(`tel:${contactPhoneNumber}`);
+  };
+
   const sLAStatusText = () => {
     const upperCaseType = slaStatus?.type?.toUpperCase(); // FRT, NRT, or RT
     const statusKey = slaStatus?.isSlaMissed ? 'MISSED' : 'DUE';
@@ -179,9 +243,14 @@ export const ChatHeaderContainer = (props: ChatScreenHeaderProps) => {
       hasSla={!!appliedSla}
       slaEvents={conversation?.slaEvents}
       statusText={`${sLAStatusText()}: ${slaStatus?.threshold}`}
+      canCallOverWhatsapp={canCallOverWhatsapp}
+      contactPhoneNumber={contactPhoneNumber}
+      isCallDisabled={isInitiatingCall || Boolean(activeCall)}
       onBackPress={handleBackPress}
       onContactDetailsPress={handleNavigationToContactDetails}
       onToggleChatStatus={toggleChatStatus}
+      onWhatsappCall={handleWhatsappCall}
+      onPhoneCall={handlePhoneCall}
     />
   );
 };

@@ -27,7 +27,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         NSMicrophoneUsageDescription: 'This app requires access to the microphone to record audio.',
         NSAppleMusicUsageDescription:
           'This app does not use Apple Music, but a system API may require this permission.',
-        UIBackgroundModes: ['fetch', 'remote-notification'],
+        // 'audio' mantém a sessão de áudio viva quando a chamada WhatsApp vai para
+        // segundo plano. Não usar 'voip': exige PushKit e a Apple rejeita sem ele.
+        UIBackgroundModes: ['fetch', 'remote-notification', 'audio'],
         ITSAppUsesNonExemptEncryption: false,
       },
       // Please use the relative path to the google-services.json file
@@ -38,7 +40,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     android: {
       adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#ffffff' },
       package: 'com.chatwoot.app',
-      permissions: ['android.permission.CAMERA', 'android.permission.RECORD_AUDIO'],
+      permissions: [
+        'android.permission.CAMERA',
+        'android.permission.RECORD_AUDIO',
+        'android.permission.MODIFY_AUDIO_SETTINGS',
+        'android.permission.BLUETOOTH_CONNECT',
+      ],
+      // O config plugin do react-native-webrtc injeta SYSTEM_ALERT_WINDOW sem
+      // precisarmos dela (só serve para chamada recebida com overlay) e a revisão
+      // da Play implica com a permissão.
+      blockedPermissions: ['android.permission.SYSTEM_ALERT_WINDOW'],
       // Please use the relative path to the google-services.json file
       googleServicesFile: process.env.EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE,
       intentFilters: [
@@ -75,7 +86,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     owner: 'chatwoot',
     plugins: [
       'expo-font',
-      ['react-native-permissions', { iosPermissions: ['Camera', 'PhotoLibrary', 'MediaLibrary'] }],
+      [
+        'react-native-permissions',
+        { iosPermissions: ['Camera', 'PhotoLibrary', 'MediaLibrary', 'Microphone'] },
+      ],
       [
         '@sentry/react-native/expo',
         {
@@ -99,6 +113,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ios: { useFrameworks: 'static' },
         },
       ],
+      '@config-plugins/react-native-webrtc',
       './with-ffmpeg-pod.js',
     ],
     androidNavigationBar: { backgroundColor: '#ffffff' },

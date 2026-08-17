@@ -24,6 +24,13 @@ import {
   NotificationCreatedResponse,
   NotificationRemovedResponse,
 } from '@/store/notification/notificationTypes';
+import { clearCall, setCallAccepted } from '@/store/call/callSlice';
+import { VOICE_CALL_PROVIDER_WHATSAPP, type VoiceCallEvent } from '@/store/call/callTypes';
+import {
+  applyOutboundAnswer,
+  cleanupWhatsappSession,
+  isLocalWhatsappCall,
+} from './whatsappCallSession';
 
 interface ActionCableConfig {
   pubSubToken: string;
@@ -54,6 +61,9 @@ class ActionCableConnector extends BaseActionCableConnector {
       'notification.created': this.onNotificationCreated,
       'notification.deleted': this.onNotificationRemoved,
       'presence.update': this.onPresenceUpdate,
+      'voice_call.outbound_connected': this.onVoiceCallOutboundConnected,
+      'voice_call.outbound_accepted': this.onVoiceCallOutboundAccepted,
+      'voice_call.ended': this.onVoiceCallEnded,
 
       // TODO: Handle all these events later
       // 'conversation.contact_changed': this.onConversationContactChange,
@@ -151,6 +161,42 @@ class ActionCableConnector extends BaseActionCableConnector {
       clearTimeout(this.CancelTyping[conversationId]!);
       this.CancelTyping[conversationId] = null;
     }
+  };
+
+  /**
+   * `connect` é o sinal de "túnel WebRTC pronto" e chega ~20s antes do atendimento
+   * numa chamada de saída. Aplicamos o SDP answer para o handshake terminar durante
+   * o toque, mas a chamada só vira 'active' no `outbound_accepted`.
+   *
+   * O payload NÃO passa por camelCaseKeys de propósito — lemos `sdp_answer` cru,
+   * igual ao desktop.
+   */
+  onVoiceCallOutboundConnected = async (data: VoiceCallEvent) => {
+    if (data?.provider !== VOICE_CALL_PROVIDER_WHATSAPP || !data.sdp_answer) return;
+    // Broadcast é por conta e pode chegar antes de o /initiate saber o nosso call id.
+    // applyOutboundAnswer filtra chamada de terceiro e bufferiza até saber o id, então
+    // não podemos descartar aqui.
+    try {
+      await applyOutboundAnswer(data.id, data.sdp_answer);
+    } catch {
+      /* noop */
+    }
+  };
+
+  /** Atendimento de verdade: Meta manda status=ACCEPTED. Aqui o cronômetro começa. */
+  onVoiceCallOutboundAccepted = (data: VoiceCallEvent) => {
+    if (data?.provider !== VOICE_CALL_PROVIDER_WHATSAPP) return;
+    if (!isLocalWhatsappCall(data.id)) return;
+    store.dispatch(setCallAccepted({ callId: data.id, acceptedAt: Date.now() }));
+  };
+
+  onVoiceCallEnded = (data: VoiceCallEvent) => {
+    if (data?.provider !== VOICE_CALL_PROVIDER_WHATSAPP) return;
+    // O broadcast é por conta: o aparelho de todo agente recebe o evento de todo
+    // agente. Sem esta guarda, a chamada de um derrubaria a do outro.
+    if (!isLocalWhatsappCall(data.id)) return;
+    cleanupWhatsappSession();
+    store.dispatch(clearCall());
   };
 
   onPresenceUpdate = (data: PresenceUpdateData) => {

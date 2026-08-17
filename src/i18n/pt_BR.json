@@ -241,6 +241,18 @@
         "EMPTY": "Nenhuma prioridade adicionada",
         "EDIT": "Alterar"
       }
+    },
+    "CALL": {
+      "WHATSAPP_CALL": "Ligar pelo WhatsApp",
+      "DIAL_FROM_PHONE": "Ligar por este celular",
+      "RINGING": "Chamando…",
+      "MUTE": "Mudo",
+      "SPEAKER": "Viva-voz",
+      "HANG_UP": "Desligar",
+      "UNKNOWN_CONTACT": "Contato sem nome",
+      "FAILED": "Não foi possível iniciar a chamada.",
+      "PERMISSION_REQUESTED": "Permissão solicitada — o contato precisa liberar chamadas antes.",
+      "PERMISSION_PENDING": "Aguardando o contato liberar chamadas."
     }
   },
   "FILTER": {

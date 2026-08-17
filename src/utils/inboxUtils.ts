@@ -80,6 +80,12 @@ export const isAWhatsAppCloudChannel = (inbox: Inbox | undefined) => {
   );
 };
 
+// Só a perna WhatsApp: o ramo Twilio do getVoiceCallProvider do desktop é peso morto
+// aqui, porque não existe SDK de voz da Twilio no RN.
+export const isWhatsappVoiceEnabled = (inbox: Inbox | undefined) => {
+  return isAWhatsAppCloudChannel(inbox) && inbox?.voiceEnabled === true;
+};
+
 export const isASmsInbox = (inbox: Inbox | undefined) => {
   return inbox?.channelType === INBOX_TYPES.SMS || isATwilioSMSChannel(inbox);
 };

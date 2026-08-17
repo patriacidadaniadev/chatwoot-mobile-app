@@ -19,6 +19,13 @@ const nonAccountRoutes = [
   'profile/set_active_account',
 ];
 
+/**
+ * Rotas que tratam erro por conta própria marcam a request com este header — sem
+ * ele, um 422 esperado (ex.: contato ainda sem permissão de chamada) vira um toast
+ * genérico de "algo deu errado" em cima da mensagem certa.
+ */
+export const SKIP_ERROR_TOAST_HEADER = 'X-Skip-Error-Toast';
+
 const CLIENT_NAME = 'Chatwoot Mobile';
 const CLIENT_VERSION = Constants.expoConfig?.version ?? 'unknown';
 
@@ -98,7 +105,7 @@ class APIService {
         if (error.response?.status === 401) {
           const store = getStore();
           store.dispatch({ type: 'auth/logout' });
-        } else {
+        } else if (!error.config?.headers?.[SKIP_ERROR_TOAST_HEADER]) {
           showToast({ message: I18n.t('ERRORS.COMMON_ERROR') });
         }
         return Promise.reject(error);

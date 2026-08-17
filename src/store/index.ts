@@ -25,6 +25,9 @@ const persistConfig = {
   key: 'Root',
   version: CURRENT_VERSION,
   storage: AsyncStorage,
+  // A chamada em andamento vive só na memória: restaurar uma chamada morta depois
+  // de reabrir o app deixaria a tela de chamada presa sem PeerConnection nenhuma.
+  blacklist: ['call'],
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   migrate: async (state: any) => {
     // If the stored version is older or doesn't exist, return initial state

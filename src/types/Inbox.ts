@@ -13,6 +13,12 @@ export type Inbox = {
     agentReplyTimeWindowMessage?: string;
   };
   provider: string;
+  /**
+   * Só é serializado para inboxes de WhatsApp (_inbox.json.jbuilder). Exige, no
+   * servidor, provider whatsapp_cloud + provider_config.calling_enabled + a feature
+   * `channel_voice` habilitada na conta.
+   */
+  voiceEnabled?: boolean;
   messageTemplates?: WhatsAppMessageTemplate[];
   contentTemplates?: TwilioContentTemplates;
 };

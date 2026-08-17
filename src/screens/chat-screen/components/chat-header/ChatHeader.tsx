@@ -8,6 +8,7 @@ import { ChevronLeft, Overflow, ResolvedIcon, SLAIcon } from '@/svg-icons';
 import { BottomSheetBackdrop, BottomSheetWrapper } from '@/components-next';
 import { tailwind } from '@/theme';
 import { ChatDropdownMenu, DashboardList } from './DropdownMenu';
+import CallButton from './CallButton';
 import { SLAEvent } from '@/types/common';
 import { useRefsContext } from '@/context';
 import { SlaEvents } from './SlaEvents';
@@ -21,9 +22,14 @@ type ChatHeaderProps = {
   slaEvents?: SLAEvent[];
   dashboardsList: DashboardList[];
   statusText?: string;
+  canCallOverWhatsapp?: boolean;
+  contactPhoneNumber?: string | null;
+  isCallDisabled?: boolean;
   onBackPress: () => void;
   onContactDetailsPress: () => void;
   onToggleChatStatus: () => void;
+  onWhatsappCall?: () => void;
+  onPhoneCall?: () => void;
 };
 
 export const ChatHeader = ({
@@ -35,9 +41,14 @@ export const ChatHeader = ({
   hasSla,
   statusText,
   dashboardsList,
+  canCallOverWhatsapp = false,
+  contactPhoneNumber,
+  isCallDisabled,
   onBackPress,
   onContactDetailsPress,
   onToggleChatStatus,
+  onWhatsappCall = () => {},
+  onPhoneCall = () => {},
 }: ChatHeaderProps) => {
   const { slaEventsSheetRef } = useRefsContext();
 
@@ -85,6 +96,13 @@ export const ChatHeader = ({
             `flex flex-row flex-1 justify-end ${Platform.OS === 'ios' ? 'gap-4' : ''}`,
           )}>
           <Animated.View style={tailwind.style('flex flex-row items-center gap-4')}>
+            <CallButton
+              canCallOverWhatsapp={canCallOverWhatsapp}
+              phoneNumber={contactPhoneNumber}
+              isDisabled={isCallDisabled}
+              onWhatsappCall={onWhatsappCall}
+              onPhoneCall={onPhoneCall}
+            />
             {hasSla && (
               <Pressable hitSlop={8} onPress={toggleSlaEventsSheet}>
                 <Icon icon={<SLAIcon color={isSlaMissed ? '#E13D45' : '#BBBBBB'} />} size={24} />

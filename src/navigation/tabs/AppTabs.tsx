@@ -26,6 +26,7 @@ import ContactDetailsScreen from '@/screens/contact-details/ContactDetailsScreen
 import DashboardScreen from '@/screens/dashboard/DashboardScreen';
 import SearchScreen from '@/screens/search/SearchScreen';
 import NewConversationScreen from '@/screens/new-conversation';
+import CallScreen from '@/screens/call-screen';
 
 import { selectInstallationUrl } from '@/store/settings/settingsSelectors';
 import { BottomTabBar } from './BottomTabBar';
@@ -72,6 +73,7 @@ export type TabBarExcludedScreenParamList = {
   ConversationDetails: undefined;
   ConversationAction: undefined;
   NewConversation: undefined;
+  CallScreen: undefined;
 };
 const Stack = createNativeStackNavigator<TabBarExcludedScreenParamList>();
 
@@ -215,6 +217,17 @@ export const AppTabs = () => {
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
           name="NewConversation"
           component={NewConversationScreen}
+        />
+        <Stack.Screen
+          // Sem gesto de fechar: no Android sair da tela manda o app para o fundo e
+          // o sistema corta o microfone da chamada.
+          options={{
+            presentation: 'fullScreenModal',
+            animation: 'slide_from_bottom',
+            gestureEnabled: false,
+          }}
+          name="CallScreen"
+          component={CallScreen}
         />
       </Stack.Navigator>
     );
