@@ -27,6 +27,7 @@ import {
   SortByFilters,
   InboxFilters,
   AssigneeTypeFilters,
+  NewConversationFab,
 } from './components';
 
 import { ActionTabs, BottomSheetBackdrop, BottomSheetWrapper } from '@/components-next';
@@ -356,6 +357,7 @@ const ConversationScreen = () => {
             </BottomSheetWrapper>
           )}
         </BottomSheetModal>
+        <NewConversationFab />
         <ActionBottomSheet />
         <ActionTabs />
       </ConversationListStateProvider>

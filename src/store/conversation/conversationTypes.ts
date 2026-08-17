@@ -250,3 +250,12 @@ export interface TranslateMessagePayload {
 export interface TranslateMessageAPIResponse {
   content: string;
 }
+
+export interface CreateConversationPayload {
+  inbox_id: number;
+  contact_id: number;
+  source_id: string;
+  assignee_id?: number;
+  message: { content: string; template_params?: unknown };
+  custom_attributes?: Record<string, string>;
+}

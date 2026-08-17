@@ -75,7 +75,8 @@
   "CONVERSATION": {
     "HEADER": {
       "TITLE": "Conversations",
-      "CLEAR_FILTER": "Clear"
+      "CLEAR_FILTER": "Clear",
+      "OPEN_BITRIX_CARD": "Open Bitrix card"
     },
     "FILTERS": {
       "AGENT": {
@@ -269,7 +270,6 @@
       }
     }
   },
-
   "FILTER": {
     "ALL_INBOXES": "All inboxes",
     "FILTER_BY_ASSIGNEE_TYPE": "Filter by assignee type",
@@ -566,5 +566,19 @@
     "TONE_CONFIDENT": "Confident",
     "GENERATION_FAILED": "Failed to generate content. Please try again.",
     "FOLLOW_UP_FAILED": "Failed to send follow-up. Please try again."
+  },
+  "NEW_CONVERSATION": {
+    "TITLE": "New conversation",
+    "PHONE_LABEL": "Phone number",
+    "PHONE_PLACEHOLDER": "+5511999999999",
+    "PHONE_INVALID": "Enter a valid number with country code.",
+    "BITRIX_LABEL": "Bitrix card link",
+    "BITRIX_PLACEHOLDER": "https://...",
+    "BITRIX_INVALID": "Enter the card link starting with http or https.",
+    "INBOX_LABEL": "WhatsApp inbox",
+    "NO_WHATSAPP_INBOX": "This account has no WhatsApp inbox.",
+    "TEMPLATE_HINT": "A brand new number is outside the 24h window, so the first message has to be a template.",
+    "CHOOSE_TEMPLATE": "Choose template",
+    "CREATE_FAILED": "Could not create the conversation."
   }
 }

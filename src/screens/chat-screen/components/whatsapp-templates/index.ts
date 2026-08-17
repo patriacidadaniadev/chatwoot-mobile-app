@@ -1,4 +1,6 @@
 export { WhatsAppTemplatesList } from './WhatsAppTemplatesList';
+export { TemplatePickerSheet } from './TemplatePickerSheet';
+export type { TemplateSendPayload } from './TemplatePickerSheet';
 export { default as WhatsAppTemplateForm } from './WhatsAppTemplateForm';
 export { default as WhatsAppTemplateItem } from './WhatsAppTemplateItem';
 export { default as TemplateBodyPreview } from './TemplateBodyPreview';

@@ -5,8 +5,11 @@ import type {
   UpdateContactLabelsPayload,
   ContactConversationAPIResponse,
   ContactConversationPayload,
+  CreateContactAPIResponse,
+  CreateContactPayload,
 } from './contactTypes';
-import { transformConversation } from '@/utils/camelCaseKeys';
+import { transformContact, transformConversation } from '@/utils/camelCaseKeys';
+import type { Contact } from '@/types';
 
 export class ContactService {
   static async getContactLabels(payload: ContactLabelsPayload) {
@@ -37,5 +40,14 @@ export class ContactService {
     return {
       payload: transformedResponse,
     };
+  }
+
+  /**
+   * O fork tornou esse endpoint idempotente por telefone (contacts_controller#create),
+   * então mandar um número que já existe devolve o contato existente em vez de 422.
+   */
+  static async createContact(payload: CreateContactPayload): Promise<Contact> {
+    const response = await apiService.post<CreateContactAPIResponse>('contacts', payload);
+    return transformContact(response.data.payload.contact);
   }
 }

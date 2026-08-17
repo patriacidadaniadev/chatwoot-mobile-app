@@ -53,7 +53,8 @@
   "CONVERSATION": {
     "HEADER": {
       "TITLE": "Conversas",
-      "CLEAR_FILTER": "Limpar"
+      "CLEAR_FILTER": "Limpar",
+      "OPEN_BITRIX_CARD": "Abrir card no Bitrix"
     },
     "FILTERS": {
       "AGENT": {
@@ -481,5 +482,19 @@
     "EXECUTION_SUCCESS": "Macro executada com sucesso",
     "EXECUTION_ERROR": "Falha ao executar macro",
     "NO_MACROS": "Nenhuma macro encontrada"
+  },
+  "NEW_CONVERSATION": {
+    "TITLE": "Nova conversa",
+    "PHONE_LABEL": "Telefone",
+    "PHONE_PLACEHOLDER": "+5511999999999",
+    "PHONE_INVALID": "Informe um número válido com DDI.",
+    "BITRIX_LABEL": "Link do card no Bitrix",
+    "BITRIX_PLACEHOLDER": "https://...",
+    "BITRIX_INVALID": "Informe o link do card começando com http ou https.",
+    "INBOX_LABEL": "Caixa de WhatsApp",
+    "NO_WHATSAPP_INBOX": "Esta conta não tem nenhuma caixa de WhatsApp.",
+    "TEMPLATE_HINT": "Número novo está fora da janela de 24h, então a primeira mensagem tem que ser um template.",
+    "CHOOSE_TEMPLATE": "Escolher template",
+    "CREATE_FAILED": "Não foi possível criar a conversa."
   }
 }

@@ -10,7 +10,7 @@ import { CONVERSATION_STATUS } from '@/constants';
 import { ConversationStatus } from '@/types/common/ConversationStatus';
 import { ChatHeader } from './ChatHeader';
 import { DashboardList } from './DropdownMenu';
-import { ImageSourcePropType } from 'react-native';
+import { ImageSourcePropType, Linking } from 'react-native';
 import { SLAStatus } from '@/types/common/SLA';
 import { evaluateSLAStatus } from '@chatwoot/utils';
 import { resetSentMessage } from '@/store/conversation/sendMessageSlice';
@@ -138,6 +138,11 @@ export const ChatHeaderContainer = (props: ChatScreenHeaderProps) => {
     onSelect: handleNavigation,
   }));
 
+  // O link do card é gravado na conversa pelo formulário de nova conversa e pelo
+  // sync do Bitrix. Só abrimos http/https, mesma checagem do ConversationHeader.vue.
+  const bitrixCardUrl = conversation?.customAttributes?.bitrix_card_url;
+  const canOpenBitrixCard = /^https?:\/\//i.test(bitrixCardUrl ?? '');
+
   const dashboardsList = useMemo(() => {
     return [
       pagerViewIndex === 0
@@ -146,10 +151,16 @@ export const ChatHeaderContainer = (props: ChatScreenHeaderProps) => {
             onSelect: handleNavigation,
           }
         : undefined,
+      canOpenBitrixCard
+        ? {
+            title: i18n.t('CONVERSATION.HEADER.OPEN_BITRIX_CARD'),
+            onSelect: () => Linking.openURL(bitrixCardUrl as string),
+          }
+        : undefined,
       ...dashboardRoutes,
     ].filter((item): item is DashboardList => item !== undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagerViewIndex]);
+  }, [pagerViewIndex, canOpenBitrixCard, bitrixCardUrl]);
 
   const sLAStatusText = () => {
     const upperCaseType = slaStatus?.type?.toUpperCase(); // FRT, NRT, or RT

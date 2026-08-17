@@ -31,6 +31,7 @@ import type {
   TogglePriorityPayload,
   TranslateMessagePayload,
   TranslateMessageAPIResponse,
+  CreateConversationPayload,
 } from './conversationTypes';
 
 import {
@@ -230,5 +231,17 @@ export class ConversationService {
       { target_language: targetLanguage },
     );
     return response.data;
+  }
+
+  /**
+   * Cria a conversa e, de quebra, o ContactInbox — é o que faz um número novo virar
+   * conversa sem precisar existir vínculo antes. Devolve o `display_id`, que é o id
+   * que o resto do app usa.
+   */
+  static async createConversation(
+    payload: CreateConversationPayload,
+  ): Promise<ConversationResponse> {
+    const response = await apiService.post('conversations', payload);
+    return { conversation: transformConversation(response.data) };
   }
 }
