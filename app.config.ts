@@ -114,6 +114,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       '@config-plugins/react-native-webrtc',
+      './with-call-recording.js',
       './with-ffmpeg-pod.js',
     ],
     androidNavigationBar: { backgroundColor: '#ffffff' },

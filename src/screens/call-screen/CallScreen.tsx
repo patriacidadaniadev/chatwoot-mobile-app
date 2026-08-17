@@ -15,6 +15,7 @@ import {
   setWhatsappCallMuted,
   setWhatsappCallSpeaker,
 } from '@/utils/whatsappCallSession';
+import callRecorder from '@/utils/callRecorder';
 
 const i18nPrefix = 'CONVERSATION.CALL';
 
@@ -95,6 +96,7 @@ export const CallScreen = () => {
   };
 
   const handleHangUp = async () => {
+    await callRecorder.stop();
     await endActiveCall(call.callId);
     dispatch(clearCall());
   };

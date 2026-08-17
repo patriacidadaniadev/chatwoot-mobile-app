@@ -26,6 +26,7 @@ import {
 import { VOICE_CALL_OUTBOUND_INIT_STATUS } from '@/store/call/callTypes';
 import { initiateOutboundCall } from '@/utils/whatsappCallSession';
 import { isWhatsappVoiceEnabled } from '@/utils/inboxUtils';
+import callRecorder from '@/utils/callRecorder';
 
 type ChatScreenHeaderProps = {
   name: string;
@@ -183,6 +184,10 @@ export const ChatHeaderContainer = (props: ChatScreenHeaderProps) => {
     if (isInitiatingCall || activeCall) return;
     dispatch(setInitiating(true));
     try {
+      // SPIKE: o consentimento de captura do Android vale para a sessão do app, então
+      // só aparece na primeira ligação. Falhar aqui não impede a chamada.
+      if (callRecorder.isSupported) await callRecorder.requestConsent();
+
       const response = await initiateOutboundCall(conversationId);
 
       // LOCKED = já tem init em voo ou chamada ativa. No-op silencioso.

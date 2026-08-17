@@ -31,6 +31,7 @@ import {
   cleanupWhatsappSession,
   isLocalWhatsappCall,
 } from './whatsappCallSession';
+import callRecorder from './callRecorder';
 
 interface ActionCableConfig {
   pubSubToken: string;
@@ -188,6 +189,9 @@ class ActionCableConnector extends BaseActionCableConnector {
     if (data?.provider !== VOICE_CALL_PROVIDER_WHATSAPP) return;
     if (!isLocalWhatsappCall(data.id)) return;
     store.dispatch(setCallAccepted({ callId: data.id, acceptedAt: Date.now() }));
+    // Só a partir do atendimento: o connect chega ~20s antes, ainda chamando, e
+    // gravar esse trecho encheria o WAV de silêncio.
+    callRecorder.start(data.id);
   };
 
   onVoiceCallEnded = (data: VoiceCallEvent) => {
@@ -195,6 +199,7 @@ class ActionCableConnector extends BaseActionCableConnector {
     // O broadcast é por conta: o aparelho de todo agente recebe o evento de todo
     // agente. Sem esta guarda, a chamada de um derrubaria a do outro.
     if (!isLocalWhatsappCall(data.id)) return;
+    callRecorder.stop();
     cleanupWhatsappSession();
     store.dispatch(clearCall());
   };

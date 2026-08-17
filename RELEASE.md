@@ -40,6 +40,17 @@ O que já está no repositório e o que ainda depende de credencial de humano.
 - **CI**: `.github/workflows/distribute-android.yml` (`workflow_dispatch` ou push na
   `custom-v4.8`) builda e publica no Firebase App Distribution.
 
+## Gravação de chamada (Android)
+
+Há um spike em `android-callrecording/` — leia o README de lá antes de mexer. Resumo:
+a perna remota da chamada não tem gancho de PCM no `react-native-webrtc`, então o
+spike marca a saída de áudio como `USAGE_MEDIA` para poder usar o AudioPlaybackCapture
+do Android. Isso é uma troca com custo em roteamento/eco, e o objetivo do spike é
+justamente medir esse custo em aparelho antes de a gente se comprometer.
+
+Enquanto o spike não for validado, o WAV fica no cache do app e não sobe para o
+Chatwoot.
+
 ## iOS
 
 O Firebase App Distribution para iOS exige build *ad-hoc* com os UDIDs dos aparelhos
