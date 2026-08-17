@@ -1,0 +1,37 @@
+name: CI
+
+# O upstream traz um .circleci/config.yml que só roda jest. Deixamos ele intocado
+# para não conflitar em todo merge de upstream e usamos Actions do nosso lado.
+on:
+  push:
+    branches: [custom-v4.8]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+
+      # O baseline do upstream não passa no eslint nem no tsc (drift de prettier e
+      # erros de tipo antigos), então só barramos o que este PR mexeu. Reformatar 20
+      # arquivos de upstream criaria conflito em todo merge, por zero ganho.
+      - name: Lint changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          FILES=$(git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}"...HEAD \
+            -- '*.ts' '*.tsx' '*.js' '*.jsx')
+          if [ -z "$FILES" ]; then echo "nada para lintar"; exit 0; fi
+          echo "$FILES"
+          # shellcheck disable=SC2086
+          npx eslint $FILES

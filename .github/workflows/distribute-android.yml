@@ -1,0 +1,75 @@
+name: Build e distribuir (Android)
+
+# Build na nuvem da Expo e entrega pelo Firebase App Distribution.
+#
+# iOS não está aqui de propósito: o App Distribution para iOS exige build ad-hoc com
+# os UDIDs dos aparelhos no perfil de provisionamento, o que obriga a regerar perfil e
+# refazer build a cada celular novo. Para iOS o caminho é TestFlight (`eas submit -p ios`).
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'Notas da versão (o padrão é a mensagem do commit)'
+        required: false
+  push:
+    branches: [custom-v4.8]
+
+concurrency:
+  group: distribute-android
+  cancel-in-progress: false
+
+jobs:
+  build-and-distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: pnpm install --frozen-lockfile
+
+      # O app.config lê o caminho do google-services.json de uma env; o arquivo em si
+      # nunca entra no git.
+      - name: Restaurar google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_B64 }}" | base64 -d > google-services.json
+
+      - name: Build (perfil preview)
+        id: build
+        env:
+          EXPO_PUBLIC_CHATWOOT_BASE_URL: ${{ vars.EXPO_PUBLIC_CHATWOOT_BASE_URL }}
+          EXPO_PUBLIC_PROJECT_ID: ${{ vars.EXPO_PUBLIC_PROJECT_ID }}
+          EXPO_PUBLIC_APP_SLUG: ${{ vars.EXPO_PUBLIC_APP_SLUG }}
+          EXPO_PUBLIC_EXPO_OWNER: ${{ vars.EXPO_PUBLIC_EXPO_OWNER }}
+          EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE: ./google-services.json
+        run: |
+          eas build --platform android --profile preview --non-interactive --wait --json \
+            > build.json
+          echo "url=$(python3 -c "import json;print(json.load(open('build.json'))[0]['artifacts']['buildUrl'])")" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Baixar o APK
+        run: curl -sSL -o app.apk "${{ steps.build.outputs.url }}"
+
+      - name: Distribuir pelo Firebase
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ./firebase-service-account.json
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > firebase-service-account.json
+          npx firebase-tools@latest appdistribution:distribute app.apk \
+            --app "${{ secrets.FIREBASE_APP_ID_ANDROID }}" \
+            --groups sdr \
+            --release-notes "${{ github.event.inputs.notes || github.event.head_commit.message }}"
+
+      - name: Limpar segredos do runner
+        if: always()
+        run: rm -f google-services.json firebase-service-account.json

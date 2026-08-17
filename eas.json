@@ -8,6 +8,14 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    // Build interno para o time: release mode, mas instalável por link em vez de
+    // loja. No Android sai .apk, que é o que o Firebase App Distribution recebe.
+    "preview": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": false }
+    },
     "production": {
       "autoIncrement": true
     }
