@@ -60,16 +60,21 @@ jobs:
       - name: Baixar o APK
         run: curl -sSL -o app.apk "${{ steps.build.outputs.url }}"
 
+      # O scripts/distribute-android.sh fala com a REST API do App Distribution usando
+      # `gcloud auth print-access-token`, então basta o gcloud estar autenticado — é o
+      # mesmo caminho usado na máquina de quem desenvolve.
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      - uses: google-github-actions/setup-gcloud@v2
+
       - name: Distribuir pelo Firebase
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ./firebase-service-account.json
+          FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
         run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > firebase-service-account.json
-          npx firebase-tools@latest appdistribution:distribute app.apk \
-            --app "${{ secrets.FIREBASE_APP_ID_ANDROID }}" \
-            --groups sdr \
-            --release-notes "${{ github.event.inputs.notes || github.event.head_commit.message }}"
+          ./scripts/distribute-android.sh app.apk \
+            "${{ github.event.inputs.notes || github.event.head_commit.message }}"
 
       - name: Limpar segredos do runner
         if: always()
-        run: rm -f google-services.json firebase-service-account.json
+        run: rm -f google-services.json

@@ -1,22 +1,73 @@
 # Build e distribuição — fork Pátria
 
-O que já está no repositório e o que ainda depende de credencial de humano.
+## Estado atual
 
-## O que falta configurar (uma vez)
+**Firebase — já feito.** O app Android está registrado no projeto
+`patria-cidadania-dev` (número `624960947942`, o mesmo onde o integration-hub roda,
+apesar do nome `-dev`):
 
-1. **Projeto Expo** — `eas login` e `eas init` na raiz deste repo. Guarde o
-   `projectId` e a conta dona; eles viram as variáveis `EXPO_PUBLIC_PROJECT_ID` e
-   `EXPO_PUBLIC_EXPO_OWNER`.
-2. **Projeto Firebase** — registrar dois apps com os ids que o `app.config.ts` usa:
-   - Android: `br.com.patriacidadania.chatwoot`
-   - iOS: `br.com.patriacidadania.chatwoot`
+| | |
+|---|---|
+| Projeto | `patria-cidadania-dev` |
+| App id Android | `1:624960947942:android:740bcf2bc3aff9f693dd27` |
+| Package | `br.com.patriacidadania.chatwoot` |
 
-   Baixar `google-services.json` e `GoogleService-Info.plist`. Eles **não** entram no
-   git (já estão no `.gitignore`) — em dev ficam na raiz, no CI vêm de secret.
-3. **Push** — cadastrar a chave FCM v1 do mesmo projeto Firebase no servidor
-   Chatwoot. Sem isso o app builda e funciona, só não recebe notificação.
-4. **Grupo de testers** — criar o grupo `sdr` no Firebase App Distribution (é o nome
-   usado no workflow).
+Para baixar o `google-services.json` de novo (ele não entra no git):
+
+```
+gcloud auth login   # se necessário
+TOKEN=$(gcloud auth print-access-token)
+curl -s -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: patria-cidadania-dev" \
+  "https://firebase.googleapis.com/v1beta1/projects/patria-cidadania-dev/androidApps/1:624960947942:android:740bcf2bc3aff9f693dd27/config" \
+  | python3 -c "import json,sys,base64; d=json.load(sys.stdin); open('google-services.json','wb').write(base64.b64decode(d['configFileContents']))"
+```
+
+## O que ainda falta (ação humana)
+
+1. **Aceitar os termos do App Distribution** — um clique em "Get started" em
+   https://console.firebase.google.com/project/patria-cidadania-dev/appdistribution
+   A API está habilitada, mas qualquer chamada responde
+   `ToS not accepted ... for onboarding projects/624960947942` até esse clique. É o
+   único bloqueio para o primeiro envio.
+2. **Grupo de testers `sdr`** — criar depois do passo 1 (o workflow usa esse nome).
+   Dá para fazer pelo console ou por API.
+3. **Projeto Expo** — `eas login` e `eas init`. Guarde o `projectId` e a conta dona;
+   viram `EXPO_PUBLIC_PROJECT_ID` e `EXPO_PUBLIC_EXPO_OWNER`. Só é necessário para o
+   build na nuvem; o build local já funciona sem isso.
+4. **Push** — cadastrar a chave FCM v1 do mesmo projeto Firebase no servidor Chatwoot.
+   Sem isso o app builda e funciona, só não recebe notificação.
+5. **Keystore de release** — o `assembleRelease` gerado pelo prebuild assina com a
+   **debug keystore** (é o padrão do template do Expo, ver `android/app/build.gradle`).
+   Serve para o primeiro round interno, mas antes de abrir para o time é preciso gerar
+   uma keystore própria: trocar depois obriga todo mundo a desinstalar e reinstalar,
+   porque o Android recusa update com assinatura diferente. No build por EAS isso é
+   resolvido pelo `eas credentials`.
+6. **Sentry (opcional)** — o plugin do Sentry só entra no build quando
+   `EXPO_PUBLIC_SENTRY_ORG_NAME` e `EXPO_PUBLIC_SENTRY_PROJECT_NAME` estão setados.
+   Sem eles o upstream instalava a task de upload de source map mesmo assim e o
+   `assembleRelease` quebrava com `An organization ID or slug is required`.
+7. **iOS** — registrar o app iOS no mesmo projeto Firebase e baixar o
+   `GoogleService-Info.plist`, quando o iOS entrar na fila.
+
+## Primeiro envio (depois do clique nos termos)
+
+```
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export JAVA_HOME="$(/usr/libexec/java_home -v 17)"
+
+# grupo de testers, uma vez
+TOKEN=$(gcloud auth print-access-token)
+curl -sS -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "x-goog-user-project: patria-cidadania-dev" -H "Content-Type: application/json" \
+  -d '{"displayName":"SDR"}' \
+  "https://firebaseappdistribution.googleapis.com/v1/projects/624960947942/groups?groupId=sdr"
+
+# e o envio
+./scripts/distribute-android.sh \
+  android/app/build/outputs/apk/release/app-release.apk "primeiro build interno"
+```
+
+Depois, adicionar os e-mails dos testers ao grupo `sdr` pelo console.
 
 ## Secrets e variables do GitHub
 
@@ -33,12 +84,31 @@ O que já está no repositório e o que ainda depende de credencial de humano.
 
 ## Rodando
 
-- **Dev**: copiar `.env.example` para `.env`, preencher, `pnpm install` e
-  `pnpm run:ios -d` / `pnpm run:android -d`. É preciso um dev client (o app usa
-  módulos nativos, não roda no Expo Go): `npx expo prebuild` na primeira vez.
-- **Build interno manual**: `eas build --platform android --profile preview`.
+Ambiente local (já instalado nesta máquina): SDK do Android em
+`~/Library/Android/sdk` e JDK 17 (o Gradle não aceita o 25 que é o padrão aqui).
+
+```
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export JAVA_HOME="$(/usr/libexec/java_home -v 17)"
+```
+
+- **Dev**: copiar `.env.example` para `.env`, preencher, `pnpm install`,
+  `npx expo prebuild --platform android` e `pnpm run:android -d`. Não roda no Expo Go
+  (o app usa módulos nativos), precisa de dev client.
+- **Build local para distribuir**:
+  ```
+  npx expo prebuild --platform android --clean
+  (cd android && ./gradlew :app:assembleRelease)
+  ./scripts/distribute-android.sh android/app/build/outputs/apk/release/app-release.apk "o que mudou"
+  ```
+  O script fala direto com a REST API do App Distribution usando
+  `gcloud auth print-access-token` — não precisa de service account nem de
+  `firebase-tools` para o envio manual.
+- **Build na nuvem**: `eas build --platform android --profile preview` (depende do
+  `eas init`).
 - **CI**: `.github/workflows/distribute-android.yml` (`workflow_dispatch` ou push na
-  `custom-v4.8`) builda e publica no Firebase App Distribution.
+  `custom-v4.8`) builda pela Expo e chama o mesmo `scripts/distribute-android.sh`,
+  autenticando o gcloud com o service account.
 
 ## Gravação de chamada (Android)
 
@@ -68,3 +138,14 @@ git merge upstream/develop     # ou rebase, se a branch ainda não foi compartil
 
 Nossos commits são poucos e concentrados; o `.circleci/config.yml` do upstream é
 deixado intocado justamente para não conflitar.
+
+## Notas do primeiro build local
+
+- APK de release: `android/app/build/outputs/apk/release/app-release.apk`, ~119 MB.
+  O tamanho vem de empacotar as quatro ABIs mais o ffmpeg-kit. Para encolher num
+  build de distribuição:
+  `./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64`
+  (arm64 cobre os celulares, x86_64 mantém emulador funcionando).
+- O R8 renomeia `CallRecordingAudio`/`CallRecordingPackage`, o que é esperado — nada
+  ali usa reflexão. O `CallRecordingModule` mantém o nome porque as regras do
+  React Native preservam classes com `@ReactMethod`.

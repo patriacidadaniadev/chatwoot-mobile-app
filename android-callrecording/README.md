@@ -80,3 +80,16 @@ declarado no manifest do `react-native-webrtc` — só reaproveitamos.
 > `PeerConnectionFactory.initialize` por conta própria: criar o ADM passa por JNI, e o
 > `WebRTCModule` só inicializa a lib nativa **depois** de ler
 > `options.audioDeviceModule` (`WebRTCModule.java:69-81`).
+
+## Ligando o modo de captura
+
+O padrão é **desligado**: sem o flag, o áudio da chamada fica em
+`USAGE_VOICE_COMMUNICATION` (comportamento correto) e a captura grava silêncio. Isso
+existe para o build normal não degradar o áudio de quem só quer ligar.
+
+```
+EXPO_PUBLIC_CALL_RECORDING=1 npx expo prebuild --platform android --clean
+```
+
+O `with-call-recording.js` troca `captureFriendlyAudio` para `true` na cópia do fonte.
+Para o A/B, gerar os dois builds e comparar a mesma ligação.

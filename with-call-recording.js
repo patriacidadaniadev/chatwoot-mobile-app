@@ -13,7 +13,9 @@ const path = require('path');
 const SOURCE_DIR = 'android-callrecording';
 const JAVA_PACKAGE = 'br.com.patriacidadania.chatwoot.callrecording';
 const INSTALL_CALL = 'CallRecordingAudio.install(this)';
-const PACKAGE_LINE = 'add(CallRecordingPackage())';
+const PACKAGE_LINE = 'packages.add(CallRecordingPackage())';
+// Build do spike: EXPO_PUBLIC_CALL_RECORDING=1 npx expo prebuild --platform android --clean
+const RECORDING_ENABLED = process.env.EXPO_PUBLIC_CALL_RECORDING === '1';
 
 function copySources(config) {
   return withDangerousMod(config, [
@@ -27,7 +29,17 @@ function copySources(config) {
       );
       fs.mkdirSync(to, { recursive: true });
       for (const file of fs.readdirSync(from)) {
-        fs.copyFileSync(path.join(from, file), path.join(to, file));
+        if (!file.endsWith('.kt')) continue;
+        let source = fs.readFileSync(path.join(from, file), 'utf8');
+        // Só o build do spike marca o áudio como capturável: fora dele a chamada tem
+        // que ficar em USAGE_VOICE_COMMUNICATION, senão degrada para todo mundo.
+        if (RECORDING_ENABLED) {
+          source = source.replace(
+            'var captureFriendlyAudio: Boolean = false',
+            'var captureFriendlyAudio: Boolean = true',
+          );
+        }
+        fs.writeFileSync(path.join(to, file), source);
       }
       return cfg;
     },
@@ -67,10 +79,13 @@ function wireMainApplication(config) {
       );
     }
 
+    // O template do Expo usa `val packages = PackageList(this).packages` seguido de
+    // `packages.add(...)`, e não o `.apply {}` de outros templates — daí o receptor
+    // explícito. A indentação vem do próprio comentário de exemplo.
     if (!contents.includes(PACKAGE_LINE)) {
       contents = contents.replace(
-        /(\/\/ packages\.add\(MyReactNativePackage\(\)\)|add\(MyReactNativePackage\(\)\))/,
-        `$1\n              ${PACKAGE_LINE}`,
+        /^([ \t]*)\/\/ packages\.add\(MyReactNativePackage\(\)\)$/m,
+        `$&\n$1${PACKAGE_LINE}`,
       );
     }
 

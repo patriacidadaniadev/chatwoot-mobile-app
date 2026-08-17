@@ -30,9 +30,14 @@ import org.webrtc.audio.JavaAudioDeviceModule
 object CallRecordingAudio {
     private const val TAG = "CallRecordingAudio"
 
-    /** Ligado pelo BuildConfig para dar para comparar os dois modos no mesmo aparelho. */
+    /**
+     * Falso por padrão: o áudio de chamada fica em `USAGE_VOICE_COMMUNICATION`, que é o
+     * comportamento correto, e a captura grava silêncio. O `with-call-recording.js`
+     * troca para `true` quando o build sai com `EXPO_PUBLIC_CALL_RECORDING=1` — é assim
+     * que se gera o build do spike sem degradar o áudio de quem só quer ligar.
+     */
     @JvmStatic
-    var captureFriendlyAudio: Boolean = true
+    var captureFriendlyAudio: Boolean = false
 
     @JvmStatic
     fun install(context: Context) {

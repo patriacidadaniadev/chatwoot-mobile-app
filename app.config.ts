@@ -90,14 +90,21 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'react-native-permissions',
         { iosPermissions: ['Camera', 'PhotoLibrary', 'MediaLibrary', 'Microphone'] },
       ],
-      [
-        '@sentry/react-native/expo',
-        {
-          url: 'https://sentry.io/',
-          project: process.env.EXPO_PUBLIC_SENTRY_PROJECT_NAME,
-          organization: process.env.EXPO_PUBLIC_SENTRY_ORG_NAME,
-        },
-      ],
+      // Sem org/projeto o plugin ainda instala a task de upload de source map no
+      // Gradle, e o build de release morre com "An organization ID or slug is
+      // required". Só entra quando o Sentry estiver realmente configurado.
+      ...(process.env.EXPO_PUBLIC_SENTRY_ORG_NAME && process.env.EXPO_PUBLIC_SENTRY_PROJECT_NAME
+        ? [
+            [
+              '@sentry/react-native/expo',
+              {
+                url: 'https://sentry.io/',
+                project: process.env.EXPO_PUBLIC_SENTRY_PROJECT_NAME,
+                organization: process.env.EXPO_PUBLIC_SENTRY_ORG_NAME,
+              },
+            ] as [string, Record<string, unknown>],
+          ]
+        : []),
       '@react-native-firebase/app',
       '@react-native-firebase/messaging',
       [

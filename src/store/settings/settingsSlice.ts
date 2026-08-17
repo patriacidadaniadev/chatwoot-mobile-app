@@ -19,9 +19,15 @@ interface SettingsState {
   version: string;
   pushToken: string;
 }
+// Num build nosso o servidor é sempre o mesmo, então o SDR não deveria ter que
+// digitar a URL na primeira abertura. Sem a env, cai no default do upstream.
+const DEFAULT_INSTALLATION_URL = process.env.EXPO_PUBLIC_CHATWOOT_BASE_URL
+  ? `${process.env.EXPO_PUBLIC_CHATWOOT_BASE_URL.replace(/\/+$/, '')}/`
+  : 'https://app.chatwoot.com/';
+
 const initialState: SettingsState = {
-  baseUrl: 'app.chatwoot.com',
-  installationUrl: 'https://app.chatwoot.com/',
+  baseUrl: DEFAULT_INSTALLATION_URL.replace(/^https?:\/\//, '').replace(/\/+$/, ''),
+  installationUrl: DEFAULT_INSTALLATION_URL,
   uiFlags: {
     isSettingUrl: false,
     isUpdating: false,
