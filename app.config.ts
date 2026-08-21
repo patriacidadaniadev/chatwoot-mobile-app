@@ -38,7 +38,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: ['applinks:chat.patriacidadania.com.br'],
     },
     android: {
-      adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#ffffff' },
+      // #1E2021 é a cor de fundo da marca Pátria (mesma usada no favicon do site).
+      adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#1E2021' },
       package: 'br.com.patriacidadania.chatwoot',
       permissions: [
         'android.permission.CAMERA',

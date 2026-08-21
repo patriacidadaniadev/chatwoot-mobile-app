@@ -25,7 +25,16 @@ type CallRecordingNative = {
 
 const native = NativeModules.CallRecording as CallRecordingNative | undefined;
 
-const isSupported = Platform.OS === 'android' && Boolean(native);
+/**
+ * O módulo nativo é compilado em TODO build Android — só o `captureFriendlyAudio` do
+ * Kotlin muda com o flag. Sem checar a mesma env aqui, `requestConsent()` abriria o
+ * diálogo do sistema ("Start recording or casting?") em toda tentativa de chamada,
+ * mesmo num build sem gravação nenhuma — assustando qualquer tester à toa.
+ * `EXPO_PUBLIC_CALL_RECORDING` é lida pelo Metro na hora do bundle, do mesmo jeito
+ * que `with-call-recording.js` lê na hora do prebuild — os dois vêm do mesmo build.
+ */
+const isSupported =
+  Platform.OS === 'android' && Boolean(native) && process.env.EXPO_PUBLIC_CALL_RECORDING === '1';
 
 export const callRecorder = {
   isSupported,

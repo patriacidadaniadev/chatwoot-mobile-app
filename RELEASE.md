@@ -97,11 +97,17 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 17)"
   (o app usa módulos nativos), precisa de dev client.
 - **Build local para distribuir**:
   ```
-  npx expo prebuild --platform android --clean
-  (cd android && ./gradlew :app:assembleRelease)
+  ./scripts/build-android-release.sh
   ./scripts/distribute-android.sh android/app/build/outputs/apk/release/app-release.apk "o que mudou"
   ```
-  O script fala direto com a REST API do App Distribution usando
+  **Não** rode `expo prebuild` e `gradlew assembleRelease` em sessões de shell
+  separadas — foi assim que o primeiro build interno saiu com a URL errada e a
+  gravação ligada (as envs `EXPO_PUBLIC_*` são lidas na hora do bundling, que
+  acontece dentro do `assembleRelease`, não do `prebuild`). O
+  `build-android-release.sh` roda os dois passos numa sessão só e confere o que
+  foi parar dentro do bundle antes de dar como pronto.
+
+  O `distribute-android.sh` fala direto com a REST API do App Distribution usando
   `gcloud auth print-access-token` — não precisa de service account nem de
   `firebase-tools` para o envio manual.
 - **Build na nuvem**: `eas build --platform android --profile preview` (depende do
